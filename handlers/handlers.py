@@ -6,6 +6,8 @@ from utils.utils import message_history, user_history, DOWNLOAD_FOLDER, safe_fil
 from config_data.config import Config, load_config
 import aiofiles
 import aiohttp
+from aiogram.types.input_file import FSInputFile
+import os
 
 
 config: Config = load_config()
@@ -59,7 +61,7 @@ async def show_history(callback_query: types.CallbackQuery):
         await bot.delete_message(user_id, message_history[user_id])
 
     # Отправляем историю скачанных файлов
-    sent_message = await callback_query.message.answer(f"Ваша история скачанных файлов:\n{history_text}")
+    sent_message = await callback_query.message.answer(f"Ваша история скачанных файлов:\n{history_text}",reply_markup=inline_menu_kb)
     # Сохраняем идентификатор отправленного сообщения
     message_history[user_id] = sent_message.message_id
 
@@ -74,7 +76,7 @@ async def send_help(callback_query: types.CallbackQuery):
         await bot.delete_message(user_id, message_history[user_id])
 
     # Отправляем помощь
-    sent_message = await callback_query.message.answer(text=LEXICON_RU['/help'])
+    sent_message = await callback_query.message.answer(text=LEXICON_RU['/help'],reply_markup=inline_menu_kb)
     # Сохраняем идентификатор отправленного сообщения
     message_history[user_id] = sent_message.message_id
 
@@ -89,7 +91,7 @@ async def bot_info(callback_query: types.CallbackQuery):
         await bot.delete_message(user_id, message_history[user_id])
 
     # Отправляем информацию о боте
-    sent_message = await callback_query.message.answer(text=LEXICON_RU['info'])
+    sent_message = await callback_query.message.answer(text=LEXICON_RU['info'],reply_markup=inline_menu_kb)
     # Сохраняем идентификатор отправленного сообщения
     message_history[user_id] = sent_message.message_id
 
@@ -104,7 +106,7 @@ async def bot_contacts(callback_query: types.CallbackQuery):
         await bot.delete_message(user_id, message_history[user_id])
 
     # Отправляем контактную информацию
-    sent_message = await callback_query.message.answer(text=LEXICON_RU['contacts'])
+    sent_message = await callback_query.message.answer(text=LEXICON_RU['contacts'],reply_markup=inline_menu_kb)
     # Сохраняем идентификатор отправленного сообщения
     message_history[user_id] = sent_message.message_id
 
@@ -154,10 +156,12 @@ async def download_file(message: Message):
                         user_history[user_id].append(f"Файл: {filename}, Путь: {str(filepath)}")
 
                         # Отправляем уведомление о скачанном файле
-                        await message.answer(
-                            f"Файл успешно скачан: {filename}\nПуть к файлу: {str(filepath)}",
-                            reply_markup=inline_menu_kb
-                        )
+                        document = FSInputFile(filepath)
+                        await bot.send_document(user_id, document, caption=f"Файл успешно скачан: {filename}",
+                                                reply_markup=inline_menu_kb
+                                                )
+                        os.remove(filepath)
+
                     else:
                         await message.answer("Не удалось скачать файл. Файл пустой.")
                 else:
